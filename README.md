@@ -202,13 +202,36 @@ Sekali jalan tanpa mode interaktif:
 npm run qwen -- "Ringkas kondisi router core"
 ```
 
-Agar Ollama menerima koneksi dari mesin lain, di mesin yang menjalankan model:
+Agar Ollama menerima koneksi dari mesin lain:
+
+Linux (systemd):
+
+```bash
+sudo mkdir -p /etc/systemd/system/ollama.service.d
+printf '[Service]\nEnvironment="OLLAMA_HOST=0.0.0.0:11434"\n' | sudo tee /etc/systemd/system/ollama.service.d/override.conf
+sudo systemctl daemon-reload
+sudo systemctl restart ollama
+```
+
+Windows (service Ollama):
 
 ```
 setx OLLAMA_HOST 0.0.0.0:11434
 ```
 
-Restart Ollama, lalu buka firewall TCP 11434 untuk host bridge. Verifikasi: `curl http://10.10.10.21:11434/api/tags`.
+Restart Ollama, lalu verifikasi dari host bridge: `curl http://10.10.10.21:11434/api/tags`.
+
+Alternatif tanpa mengubah bind (SSH tunnel):
+
+```
+ssh -N -L 11434:127.0.0.1:11434 iqbal@10.10.10.21
+```
+
+Lalu set `OLLAMA_HOST=http://127.0.0.1:11434` pada bridge.
+
+Untuk memakai model turunan/custom, misalnya `network-expert:latest`: `$env:QWEN_MODEL="network-expert:latest"`.
+
+Catatan keamanan: Ollama tidak memiliki autentikasi. Jika di-bind ke `0.0.0.0`, siapa pun di LAN dapat memakai model; batasi port 11434 dengan firewall atau VPN.
 
 Variabel lain: `QWEN_NUM_CTX` (default 8192), `QWEN_THINK` (`true`/`false`, kosong = default model), `QWEN_TIMEOUT_MS` (default 120000), `QWEN_MAX_TOOL_TURNS` (default 6), `QWEN_MAX_TOOL_CHARS` (default 12000). Model 4B lebih lemah dalam memilih tool: mulai dari pertanyaan spesifik, satu device, dan filter yang sempit.
 
