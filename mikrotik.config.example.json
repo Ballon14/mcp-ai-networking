@@ -1,0 +1,28 @@
+{
+  "defaultDevice": "core",
+  "maxRows": 200,
+  "devices": [
+    {
+      "name": "core",
+      "host": "192.168.88.1",
+      "port": 443,
+      "user": "mcp-read",
+      "passwordEnv": "ROS_CORE_PASS",
+      "tls": true,
+      "insecure": false,
+      "timeoutMs": 10000,
+      "minIntervalMs": 250
+    },
+    {
+      "name": "branch",
+      "host": "192.168.89.1",
+      "port": 443,
+      "user": "mcp-read",
+      "passwordEnv": "ROS_BRANCH_PASS",
+      "tls": true,
+      "insecure": true,
+      "timeoutMs": 10000,
+      "minIntervalMs": 250
+    }
+  ]
+}

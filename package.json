@@ -1,0 +1,30 @@
+{
+  "name": "mcp-ai",
+  "version": "1.0.0",
+  "description": "Read-only MCP server for MikroTik RouterOS v7 over the REST API",
+  "main": "src/server.mjs",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.mjs",
+    "test": "node --test \"test/*.test.mjs\"",
+    "inspect": "npx @modelcontextprotocol/inspector node src/server.mjs",
+    "demo": "node --env-file-if-exists=.env examples/mcp-client-demo.mjs",
+    "bridge": "node --env-file-if-exists=.env examples/openai-bridge.mjs"
+  },
+  "keywords": [
+    "mcp",
+    "mikrotik",
+    "routeros",
+    "network",
+    "ai"
+  ],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
+  }
+}
