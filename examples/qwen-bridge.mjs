@@ -51,7 +51,7 @@ function positiveNumber(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-async function fetchJson(url, options = {}, timeoutMs = 120000) {
+async function fetchJson(url, options = {}, timeoutMs = 300000) {
   let response;
   try {
     response = await fetch(url, {
@@ -60,7 +60,9 @@ async function fetchJson(url, options = {}, timeoutMs = 120000) {
     });
   } catch (error) {
     if (error.name === "TimeoutError") {
-      throw new Error(`Request ke ${url} melewati batas ${timeoutMs} ms.`);
+      throw new Error(
+        `Request ke ${url} melewati batas ${timeoutMs} ms. Naikkan QWEN_TIMEOUT_MS atau persempit pertanyaan.`
+      );
     }
     throw new Error(`Tidak bisa terhubung ke ${url}: ${error.message}`);
   }
@@ -262,7 +264,7 @@ function printHelp() {
 Environment:
   OLLAMA_HOST               default http://10.10.10.21:11434
   QWEN_MODEL                model tag; auto-detect qwen jika kosong
-  QWEN_TIMEOUT_MS           default 120000
+  QWEN_TIMEOUT_MS           default 300000
   QWEN_NUM_CTX              default 8192
   QWEN_THINK                true/false; kosong = default model
   QWEN_SHOW_THINKING        true untuk mencetak thinking
@@ -281,7 +283,7 @@ async function main() {
   const host = stripTrailingSlash(
     options.host ?? process.env.OLLAMA_HOST ?? "http://10.10.10.21:11434"
   );
-  const timeoutMs = positiveNumber(process.env.QWEN_TIMEOUT_MS, 120000);
+  const timeoutMs = positiveNumber(process.env.QWEN_TIMEOUT_MS, 300000);
 
   let models;
   try {
