@@ -39,7 +39,7 @@ src/routeros/client.mjs        REST client read-only (GET guard, TLS, timeout, c
 src/routeros/errors.mjs        Mapping error HTTP/network yang aman
 src/tools/*.mjs                Satu modul per kelompok tool + index.mjs
 src/lib/                       normalize, redact, truncate, result helpers
-examples/                      MCP client demo + OpenAI bridge
+examples/                      MCP client demo + OpenAI bridge + Ollama/Qwen bridge
 test/                          node:test + mock RouterOS HTTP server
 ```
 
@@ -53,6 +53,7 @@ npm run demo                               # smoke test semua koneksi
 npm run demo -- system_info '{"device":"core"}'
 npm run inspect                            # MCP Inspector
 npm run bridge                             # chat OpenAI via MCP
+npm run qwen                               # chat Ollama/Qwen lokal via MCP
 ```
 
 Setup lokal:

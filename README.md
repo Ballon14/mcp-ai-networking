@@ -140,6 +140,8 @@ Server berjalan di atas **stdio** (bukan HTTP): AI client yang men-spawn proses 
 
 - Smoke test + daftar tool: `npm run demo`
 - Panggil tool tertentu: `npm run demo -- system_info '{"device":"branch"}'`
+- Chat via OpenAI: `npm run bridge`
+- Chat via Ollama/Qwen lokal: `npm run qwen`
 - Debug interaktif: `npm run inspect` (MCP Inspector)
 - Test: `npm test`
 
@@ -183,6 +185,32 @@ npm run bridge
 ```
 
 Variabel opsional: `OPENAI_BASE_URL` untuk endpoint kompatibel OpenAI.
+
+### Ollama lokal (Qwen3.5)
+
+`examples/qwen-bridge.mjs` memakai Ollama native API (`/api/chat`) dengan tool calling, lalu mengeksekusi tool MCP read-only dan mengirim hasilnya kembali ke model. Model dipilih otomatis dari tag yang mengandung `qwen3.5`; set `QWEN_MODEL` untuk memilih eksplisit.
+
+```
+$env:OLLAMA_HOST = "http://10.10.10.21:11434"
+$env:QWEN_MODEL  = "qwen3.5:4b"   # opsional, sesuaikan tag di Ollama
+npm run qwen
+```
+
+Sekali jalan tanpa mode interaktif:
+
+```
+npm run qwen -- "Ringkas kondisi router core"
+```
+
+Agar Ollama menerima koneksi dari mesin lain, di mesin yang menjalankan model:
+
+```
+setx OLLAMA_HOST 0.0.0.0:11434
+```
+
+Restart Ollama, lalu buka firewall TCP 11434 untuk host bridge. Verifikasi: `curl http://10.10.10.21:11434/api/tags`.
+
+Variabel lain: `QWEN_NUM_CTX` (default 8192), `QWEN_THINK` (`true`/`false`, kosong = default model), `QWEN_TIMEOUT_MS` (default 120000), `QWEN_MAX_TOOL_TURNS` (default 6), `QWEN_MAX_TOOL_CHARS` (default 12000). Model 4B lebih lemah dalam memilih tool: mulai dari pertanyaan spesifik, satu device, dan filter yang sempit.
 
 Jika client MCP Anda memakai format `mcpServers` (Claude Desktop, opencode, dsb.):
 

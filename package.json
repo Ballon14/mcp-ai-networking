@@ -9,7 +9,8 @@
     "test": "node --test \"test/*.test.mjs\"",
     "inspect": "npx @modelcontextprotocol/inspector node src/server.mjs",
     "demo": "node --env-file-if-exists=.env examples/mcp-client-demo.mjs",
-    "bridge": "node --env-file-if-exists=.env examples/openai-bridge.mjs"
+    "bridge": "node --env-file-if-exists=.env examples/openai-bridge.mjs",
+    "qwen": "node --env-file-if-exists=.env examples/qwen-bridge.mjs"
   },
   "keywords": [
     "mcp",
