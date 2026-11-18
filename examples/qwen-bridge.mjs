@@ -12,7 +12,9 @@ const SYSTEM_PROMPT = [
   "Anda hanya memiliki tool read-only. Selalu panggil tool untuk membaca kondisi nyata sebelum menjawab.",
   "Jangan mengarang data perangkat. Jika tool gagal, jelaskan penyebab dan langkah perbaikannya.",
   "Jika hasil tool menyatakan truncated, persempit query memakai filter atau limit/offset.",
-  "Jawab ringkas dalam bahasa pengguna dan sebutkan nama device yang dipakai."
+  "get_interface_traffic adalah snapshot dua titik, bukan monitor realtime: panggil sekali per pertanyaan dan jangan mengulanginya untuk melihat tren.",
+  "Untuk pertanyaan traffic, sebut device dan interface secara eksplisit, pakai runningOnly=true dan limit 5 sampai 10.",
+  "Jawab ringkas dalam bahasa pengguna: maksimal sekitar 10 baris tabel, jangan menyalin seluruh hasil tool, dan sebutkan nama device yang dipakai."
 ].join(" ");
 
 function parseCliArgs(argv) {
@@ -51,7 +53,7 @@ function positiveNumber(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-async function fetchJson(url, options = {}, timeoutMs = 300000) {
+async function fetchJson(url, options = {}, timeoutMs = 900000) {
   let response;
   try {
     response = await fetch(url, {
@@ -61,7 +63,7 @@ async function fetchJson(url, options = {}, timeoutMs = 300000) {
   } catch (error) {
     if (error.name === "TimeoutError") {
       throw new Error(
-        `Request ke ${url} melewati batas ${timeoutMs} ms. Naikkan QWEN_TIMEOUT_MS atau persempit pertanyaan.`
+        `Request ke ${url} melewati batas ${timeoutMs} ms. Naikkan QWEN_TIMEOUT_MS, set QWEN_THINK=false, atau persempit pertanyaan (satu device, satu interface, limit kecil).`
       );
     }
     throw new Error(`Tidak bisa terhubung ke ${url}: ${error.message}`);
@@ -264,7 +266,7 @@ function printHelp() {
 Environment:
   OLLAMA_HOST               default http://10.10.10.21:11434
   QWEN_MODEL                model tag; auto-detect qwen jika kosong
-  QWEN_TIMEOUT_MS           default 300000
+  QWEN_TIMEOUT_MS           default 900000
   QWEN_NUM_CTX              default 8192
   QWEN_THINK                true/false; kosong = default model
   QWEN_SHOW_THINKING        true untuk mencetak thinking
@@ -283,7 +285,7 @@ async function main() {
   const host = stripTrailingSlash(
     options.host ?? process.env.OLLAMA_HOST ?? "http://10.10.10.21:11434"
   );
-  const timeoutMs = positiveNumber(process.env.QWEN_TIMEOUT_MS, 300000);
+  const timeoutMs = positiveNumber(process.env.QWEN_TIMEOUT_MS, 900000);
 
   let models;
   try {

@@ -233,9 +233,17 @@ Untuk memakai model turunan/custom, misalnya `network-expert:latest`: `$env:QWEN
 
 Catatan keamanan: Ollama tidak memiliki autentikasi. Jika di-bind ke `0.0.0.0`, siapa pun di LAN dapat memakai model; batasi port 11434 dengan firewall atau VPN.
 
-Variabel lain: `QWEN_NUM_CTX` (default 8192), `QWEN_THINK` (`true`/`false`, kosong = default model), `QWEN_TIMEOUT_MS` (default 300000), `QWEN_MAX_TOOL_TURNS` (default 6), `QWEN_MAX_TOOL_CHARS` (default 12000), `QWEN_MAX_HISTORY_CHARS` (default 24000). Model 4B lebih lemah dalam memilih tool: mulai dari pertanyaan spesifik, satu device, dan filter yang sempit.
+Variabel lain: `QWEN_NUM_CTX` (default 8192), `QWEN_THINK` (`true`/`false`, kosong = default model), `QWEN_TIMEOUT_MS` (default 900000 = 15 menit per request), `QWEN_MAX_TOOL_TURNS` (default 6), `QWEN_MAX_TOOL_CHARS` (default 12000), `QWEN_MAX_HISTORY_CHARS` (default 24000). Model 4B lebih lemah dalam memilih tool: mulai dari pertanyaan spesifik, satu device, dan filter yang sempit.
 
-Jika Ollama berjalan di CPU (tanpa GPU), jawaban bisa memakan beberapa menit. Set `QWEN_THINK=false` untuk mengurangi waktu, naikkan `QWEN_TIMEOUT_MS` bila perlu, dan sebutkan device secara eksplisit agar model tidak mencoba nama device yang tidak ada.
+Jika Ollama berjalan di CPU (tanpa GPU), satu jawaban panjang bisa memakan lebih dari 5 menit. Timeout berlaku **per request** ke Ollama, bukan total sesi. Untuk monitoring traffic, batasi jawaban dan sampling:
+
+```powershell
+$env:QWEN_THINK       = "false"     # matikan reasoning agar jauh lebih cepat
+$env:QWEN_TIMEOUT_MS  = "1800000"   # 30 menit bila CPU sangat lambat
+npm run qwen -- "Traffic interface WAN branch, tampilkan 5 teratas saja"
+```
+
+Sebutkan device dan interface secara eksplisit; `get_interface_traffic` adalah snapshot dua titik (bukan monitor kontinu), jadi tidak perlu dipanggil berulang untuk pertanyaan yang sama.
 
 Jika client MCP Anda memakai format `mcpServers` (Claude Desktop, opencode, dsb.):
 
