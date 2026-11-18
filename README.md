@@ -9,7 +9,7 @@ Custom AI app (.mjs)  ──MCP stdio──>  mcp-ai server  ──HTTPS REST─
 
 ## Fitur
 
-- 10 tool read-only: system info, interfaces, routes, firewall, DHCP, DNS, wireless, logs, ping, daftar device.
+- 11 tool read-only: system info, interfaces, traffic sampling, routes, firewall, DHCP, DNS, wireless, logs, ping, daftar device.
 - Multi-device: setiap tool menerima parameter `device` (default `defaultDevice`).
 - Read-only ditegakkan dua lapis: guard HTTP di kode (hanya GET + allowlist `POST /rest/ping`) dan user RouterOS dengan policy minimal.
 - Kredensial hanya dari environment variable; tidak pernah ditulis ke config atau log.
@@ -263,6 +263,7 @@ Semua tool menerima `device` opsional.
 | `system_info` | `/system/identity`, `/system/resource` | – |
 | `list_devices` | config lokal | – |
 | `list_interfaces` | `/interface` | `name?`, `runningOnly?`, `limit?`, `offset?` |
+| `get_interface_traffic` | `/interface` (dua kali) | `name?`, `runningOnly?`, `sampleMs?` (100–15000, default 2000), `limit?`, `offset?` |
 | `get_routes` | `/ip/route`, `/ipv6/route` | `family?`, `type?`, `dst?`, `limit?`, `offset?` |
 | `get_firewall_rules` | `/ip/firewall/{filter,nat,mangle,address-list}` | `table?`, `chain?`, `limit?`, `offset?` |
 | `get_dhcp_leases` | `/ip/dhcp-server/lease` | `status?`, `search?`, `limit?`, `offset?` |
@@ -274,6 +275,7 @@ Semua tool menerima `device` opsional.
 Catatan:
 
 - Batas default output adalah `maxRows` (200), kecuali `get_logs` (50); maksimum `limit` 500 per panggilan. Jika `truncated: true`, persempit filter atau gunakan `offset`.
+- `get_interface_traffic` membaca counter `/interface` dua kali dengan jeda `sampleMs`, lalu menghitung `rx-byte-delta`, `tx-byte-delta`, `rx-bps`, `tx-bps`, dan `*-utilization-percent` (jika field `speed` terbaca). `counterReset: true` berarti counter sempat reset sehingga rate tidak dihitung. Tidak ada `monitor-traffic` (command tulis), jadi hasilnya rata-rata selama jendela sampling.
 - `get_firewall_rules` mempertahankan urutan rule router (penting untuk firewall).
 - `get_wireless_clients` otomatis memakai menu `wifi` (wifi-qcom) atau `wireless` (paket legacy) di v7.
 - Log dikembalikan sesuai urutan router; gunakan `topics` untuk menyaring.
@@ -292,7 +294,7 @@ Catatan:
 ## Batasan v1
 
 - Read-only. Belum ada perubahan konfigurasi.
-- REST API tidak mendukung command kontinu (monitor realtime); gunakan data counter/`once`.
+- REST API tidak mendukung command kontinu (monitor realtime); `get_interface_traffic` memakai sampling dua titik, bukan stream.
 - IPv6 baru tersedia untuk route; firewall/DHCP/DNS masih IPv4.
 - Tidak ada audit log persisten.
 - REST API RouterOS membatasi request sekitar 60 detik; `timeoutMs` default 10 detik.

@@ -13,6 +13,7 @@ const EXPECTED_TOOLS = [
   "get_dhcp_leases",
   "get_dns_config",
   "get_firewall_rules",
+  "get_interface_traffic",
   "get_logs",
   "get_routes",
   "get_wireless_clients",
@@ -123,6 +124,84 @@ test("list_interfaces filters, converts counters and paginates", async (t) => {
   assert.equal(page.interfaces.length, 1);
   assert.equal(page.offset, 1);
   assert.equal(page.truncated, true);
+});
+
+test("get_interface_traffic samples counters twice and derives rates", async (t) => {
+  let reads = 0;
+  const fixtures = createFixtures();
+  fixtures["/rest/interface"] = () => {
+    reads += 1;
+    if (reads === 1) {
+      return [
+        { name: "ether1", type: "ether", running: "true", speed: "1Gbps", "rx-byte": "1000", "tx-byte": "2000" },
+        { name: "bridge", type: "bridge", running: "true", "rx-byte": "5000", "tx-byte": "6000" },
+        { name: "ether2", type: "ether", running: "false", speed: "100Mbps", "rx-byte": "10", "tx-byte": "10" }
+      ];
+    }
+    return [
+      { name: "ether1", type: "ether", running: "true", speed: "1Gbps", "rx-byte": "1251000", "tx-byte": "402000" },
+      { name: "bridge", type: "bridge", running: "true", "rx-byte": "1000", "tx-byte": "6000" },
+      { name: "ether2", type: "ether", running: "false", speed: "100Mbps", "rx-byte": "10", "tx-byte": "10" }
+    ];
+  };
+
+  const { mcpClient, mock } = await setup(t, { fixtures });
+
+  const payload = payloadOf(
+    await mcpClient.callTool({ name: "get_interface_traffic", arguments: { sampleMs: 100 } })
+  );
+
+  assert.equal(payload.total, 3);
+  assert.equal(payload.sampleMs, 100);
+  assert.ok(payload.intervalMs >= 100);
+
+  const ether1 = payload.interfaces.find((row) => row.name === "ether1");
+  assert.equal(ether1["rx-byte-delta"], 1250000);
+  assert.equal(ether1["tx-byte-delta"], 400000);
+  assert.equal(ether1["rx-bps"], Math.round((1250000 * 8 * 1000) / payload.intervalMs));
+  assert.equal(ether1["tx-bps"], Math.round((400000 * 8 * 1000) / payload.intervalMs));
+  assert.ok(ether1["rx-utilization-percent"] > 0);
+  assert.equal(ether1.counterReset, false);
+
+  const bridge = payload.interfaces.find((row) => row.name === "bridge");
+  assert.equal(bridge.counterReset, true);
+  assert.equal(bridge["rx-bps"], null);
+  assert.equal(bridge["rx-utilization-percent"], undefined);
+
+  assert.equal(payload.interfaces[0].name, "ether1");
+
+  const interfaceRequests = mock.requests.filter((request) => request.url === "/rest/interface");
+  assert.equal(interfaceRequests.length, 2);
+  assert.ok(interfaceRequests.every((request) => request.method === "GET"));
+});
+
+test("get_interface_traffic filters, paginates and validates sampleMs", async (t) => {
+  const fixtures = createFixtures();
+  fixtures["/rest/interface"] = () => [
+    { name: "ether1", type: "ether", running: "true", "rx-byte": "10", "tx-byte": "10" },
+    { name: "ether2", type: "ether", running: "false", "rx-byte": "10", "tx-byte": "10" },
+    { name: "ether3", type: "ether", running: "true", "rx-byte": "10", "tx-byte": "10" },
+    { name: "bridge", type: "bridge", running: "true", "rx-byte": "10", "tx-byte": "10" }
+  ];
+  const { mcpClient } = await setup(t, { fixtures });
+
+  const filtered = payloadOf(
+    await mcpClient.callTool({
+      name: "get_interface_traffic",
+      arguments: { name: "ether", runningOnly: true, limit: 1, sampleMs: 100 }
+    })
+  );
+
+  assert.equal(filtered.total, 2);
+  assert.equal(filtered.interfaces.length, 1);
+  assert.equal(filtered.truncated, true);
+  assert.equal(filtered.interfaces[0].name, "ether1");
+
+  const invalid = await mcpClient.callTool({
+    name: "get_interface_traffic",
+    arguments: { sampleMs: 10 }
+  });
+  assert.equal(invalid.isError, true);
 });
 
 test("get_routes filters by type and destination", async (t) => {
